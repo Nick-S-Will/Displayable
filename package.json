@@ -1,0 +1,11 @@
+{
+  "name": "com.piconico.displayable",
+  "version": "1.0.0",
+  "displayName": "Displayable",
+  "description": "A generic-based group of scripts for displaying collections of objects.",
+  "unity": "2022.3",
+  "author": {
+    "name": "Nick S Will",
+    "url": "https://github.com/Nick-S-Will"
+  }
+}
