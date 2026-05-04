@@ -3,11 +3,12 @@ using UnityEngine.UI;
 
 namespace Displayable
 {
+    /// <summary>
+    /// <see cref="Display{ObjectType}"/> for <see cref="UnityEngine.UI.Button"/>s.
+    /// </summary>
     [RequireComponent(typeof(Button))]
     public abstract class ButtonDisplay<ObjectType> : Display<ObjectType> where ObjectType : class
     {
-        protected Button button;
-
         public Button Button
         {
             get
@@ -16,5 +17,7 @@ namespace Displayable
                 return button;
             }
         }
+
+        private Button button;
     }
 }

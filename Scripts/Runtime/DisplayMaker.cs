@@ -2,92 +2,175 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Displayable
 {
-    public abstract class DisplayMaker<DisplayType, ObjectType> : MonoBehaviour where DisplayType : Display<ObjectType> where ObjectType : class
+    /// <summary>
+    /// <see cref="MonoBehaviour"/> that makes and manages <typeparamref name="DisplayType"/>s.
+    /// </summary>
+    public abstract class DisplayMaker<ObjectType, DisplayType> : MonoBehaviour where ObjectType : class where DisplayType : Display<ObjectType>
     {
         private static Action<UnityEngine.Object> ContextDestroy => Application.isPlaying ? Destroy : DestroyImmediate;
 
-        [SerializeField] protected Transform displayParent;
-        [SerializeField] protected DisplayType displayPrefab;
+        public IEnumerable<DisplayType> Displays => displayInstances.Where(display => display.DisplayObject != null);
 
-        protected readonly List<DisplayType> displayInstances = new();
+        /// <summary>
+        /// <see cref="Comparison{T}"/> used to sort <typeparamref name="DisplayType"/>s.
+        /// </summary>
+        protected virtual Comparison<DisplayType> DisplayComparison { get => null; }
 
-        protected abstract Comparison<DisplayType> DisplayComparison { get; }
+        [SerializeField] private Transform displayParent;
+        [SerializeField] private DisplayType displayPrefab;
 
-        public DisplayType[] Displays => displayInstances.ToArray();
+        private readonly List<DisplayType> displayInstances = new();
 
         protected virtual void Awake()
         {
-            if (displayParent == null) Debug.LogError($"{nameof(displayParent)} not assigned");
-            if (displayPrefab == null) Debug.LogError($"{nameof(displayPrefab)} not assigned");
+            Assert.IsNotNull(displayParent);
+            Assert.IsNotNull(displayPrefab);
         }
 
-        public virtual void SetObjects(ObjectType[] displayObjects)
+        protected virtual void OnDestroy()
         {
-            if (displayObjects == null) return;
+            DestroyDisplays(display => display != null);
+        }
 
-            var neededDisplayCount = displayObjects.Length;
-            for (int i = 0; i < Mathf.Max(displayInstances.Count, neededDisplayCount); i++)
-            {
-                if (i < displayInstances.Count)
-                {
-                    var isNeeded = i < neededDisplayCount;
-                    displayInstances[i].gameObject.SetActive(isNeeded);
-                    displayInstances[i].SetObject(isNeeded ? displayObjects[i] : null);
-                }
-                else _ = MakeDisplay(displayObjects[i], false);
-            }
+        /// <summary>
+        /// Gets or makes <typeparamref name="DisplayType"/>s for all <paramref name="displayObjects"/>.
+        /// </summary>
+        /// <remarks>Overrides existing display objects.</remarks>
+        public void SetObjects(ObjectType[] displayObjects)
+        {
+            if (displayObjects == null) throw new ArgumentNullException(nameof(displayObjects));
+
+            foreach (DisplayType display in displayInstances) display.DisplayObject = null;
+
+            AddObjects(displayObjects);
+        }
+
+        #region Add
+        /// <summary>
+        /// Makes <typeparamref name="DisplayType"/> for <paramref name="displayObject"/>.
+        /// </summary>
+        /// <returns><typeparamref name="DisplayType"/> displaying <paramref name="displayObject"/>.</returns>
+        public DisplayType AddObject(ObjectType displayObject)
+        {
+            if (displayObject == null) throw new ArgumentNullException(nameof(displayObject));
+
+            DisplayType display = displayInstances.FirstOrDefault(display => display.DisplayObject == null) ?? MakeDisplay(displayObject);
 
             UpdateDisplays();
-        }
-
-        public virtual DisplayType MakeDisplay(ObjectType displayObject, bool updateDisplays = true)
-        {
-            var display = displayInstances.FirstOrDefault(display => !display.gameObject.activeSelf);
-            display ??= Instantiate(displayPrefab, displayParent ? displayParent : transform);
-            display.SetObject(displayObject);
-            displayInstances.Add(display);
-
-            if (updateDisplays) UpdateDisplays();
 
             return display;
         }
 
-        public virtual void UpdateDisplays()
+        /// <summary>
+        /// Makes <typeparamref name="DisplayType"/>s for <paramref name="displayObjects"/>.
+        /// </summary>
+        /// <returns><typeparamref name="DisplayType"/>s displaying <paramref name="displayObjects"/>.</returns>
+        public IEnumerable<DisplayType> AddObjects(IEnumerable<ObjectType> displayObjects)
         {
-            DestroyDisplaysWithNullObjects();
+            if (displayObjects == null) throw new ArgumentNullException(nameof(displayObjects));
 
-            displayInstances.Sort(DisplayComparison);
+            if (!displayObjects.Any()) return Enumerable.Empty<DisplayType>();
+
+            Queue<DisplayType> availableDisplays = new(displayInstances.Where(display => display.DisplayObject == null));
+            List<DisplayType> displays = new();
+            foreach (ObjectType displayObject in displayObjects)
+            {
+                DisplayType display = availableDisplays.Any() ? availableDisplays.Dequeue() : MakeDisplay(displayObject);
+                displays.Add(display);
+            }
+
+            UpdateDisplays();
+
+            return displays;
+        }
+
+        private DisplayType MakeDisplay(ObjectType displayObject = null)
+        {
+            DisplayType display = Instantiate(displayPrefab, displayParent);
+            display.DisplayObject = displayObject;
+            displayInstances.Add(display);
+
+            return display;
+        }
+        #endregion
+
+        #region Remove
+        /// <summary>
+        /// Removes reference(s) to <paramref name="displayObject"/> up to <paramref name="max"/> times.
+        /// </summary>
+        /// <returns>Number of references removed.</returns>
+        public int RemoveObject(ObjectType displayObject, int max = int.MaxValue)
+        {
+            if (displayObject == null) throw new ArgumentNullException(nameof(displayObject));
+
+            if (max <= 0) return 0;
+
+            IEnumerable<DisplayType> displays = displayInstances.Where(display => display.DisplayObject == displayObject).Take(max);
+            foreach (DisplayType display in displays)
+            {
+                display.DisplayObject = null;
+            }
+
+            UpdateDisplays();
+
+            return displays.Count();
+        }
+
+        /// <summary>
+        /// Removes reference(s) to <paramref name="displayObjects"/> up to <paramref name="max"/> times each.
+        /// </summary>
+        /// <returns>Number of references removed.</returns>
+        public int RemoveObjects(IEnumerable<ObjectType> displayObjects, int max = int.MaxValue)
+        {
+            if (displayObjects.Any(displayObject => displayObject == null)) throw new ArgumentNullException(nameof(displayObjects), $"Can't remove null objects.");
+
+            if (max <= 0) return 0;
+
+            HashSet<ObjectType> displayObjectSet = displayObjects.ToHashSet();
+            IEnumerable<DisplayType> displays = displayInstances
+                .Where(display => displayObjectSet.Contains(display.DisplayObject))
+                .GroupBy(display => display.DisplayObject)
+                .SelectMany(group => group.Take(max));
+            foreach (DisplayType display in displays)
+            {
+                display.DisplayObject = null;
+            }
+
+            UpdateDisplays();
+
+            return displays.Count();
+        }
+
+        /// <summary>
+        /// Destroys <typeparamref name="DisplayType"/>s that match <paramref name="predicate"/>.
+        /// </summary>
+        protected void DestroyDisplays(Predicate<DisplayType> predicate = null)
+        {
+            foreach (var display in displayInstances)
+            {
+                if (predicate != null && !predicate(display)) continue;
+
+                displayInstances.Remove(display);
+                ContextDestroy(display.gameObject);
+            }
+        }
+        #endregion
+
+        /// <summary>
+        /// Sorts <typeparamref name="DisplayType"/>s by sibling index and calls <see cref="Display{ObjectType}.UpdateVisuals"/>.
+        /// </summary>
+        /// <remarks>Only sorts if <see cref="DisplayComparison"/> is not null.</remarks>
+        public void UpdateDisplays()
+        {
+            if (DisplayComparison != null) displayInstances.Sort(DisplayComparison);
             int extraChildCount = displayParent.childCount - displayInstances.Count;
             for (int i = 0; i < displayInstances.Count; i++) displayInstances[i].transform.SetSiblingIndex(extraChildCount + i);
 
-            foreach (var display in displayInstances) display.UpdateGraphics();
-        }
-
-        protected void DestroyDisplaysWithNullObjects() => DestroyDisplays(display => display.DisplayObject.Equals(null));
-
-        protected void DestroyDisplays() => DestroyDisplays(display => true);
-
-        protected void DestroyDisplays(Predicate<DisplayType> predicate)
-        {
-            foreach (var display in Displays)
-            {
-                if (predicate(display)) DestroyDisplay(display);
-            }
-        }
-
-        protected virtual void DestroyDisplay(DisplayType display)
-        {
-            if (!displayInstances.Contains(display))
-            {
-                Debug.LogError($"Given object ({display.name}) isn't in {nameof(displayInstances)}");
-                return;
-            }
-
-            displayInstances.Remove(display);
-            ContextDestroy(display.gameObject);
+            foreach (var display in displayInstances) display.UpdateVisuals();
         }
     }
 }

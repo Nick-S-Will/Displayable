@@ -1,20 +1,42 @@
+using System;
 using UnityEngine;
 
 namespace Displayable
 {
+    /// <summary>
+    /// <see cref="MonoBehaviour"/> that displays an <typeparamref name="ObjectType"/>.
+    /// </summary>
     public abstract class Display<ObjectType> : MonoBehaviour where ObjectType : class
     {
-        protected ObjectType displayObject;
+        protected event Action DisplayObjectChanged;
 
-        public ObjectType DisplayObject => displayObject;
-
-        public virtual void SetObject(ObjectType newObject)
+        public ObjectType DisplayObject 
         {
-            displayObject = newObject;
-            UpdateGraphics();
+            get => displayObject;
+            set
+            {
+                displayObject = value;
+                DisplayObjectChanged?.Invoke();
+
+                SetVisible(displayObject != null);
+                UpdateVisuals();
+            }
         }
 
-        /// <summary>Updates the <see cref="Display"/>'s overlay to reflect any changes in <see cref="DisplayObject"/></summary>
-        public abstract void UpdateGraphics();
+        private ObjectType displayObject;
+       
+        /// <summary>
+        /// Sets visibility to <paramref name="visible"/>.
+        /// </summary>
+        /// <remarks>Defaults to <see cref="GameObject.SetActive(bool)"/>.</remarks>
+        protected virtual void SetVisible(bool visible)
+        {
+            gameObject.SetActive(visible);
+        }
+
+        /// <summary>
+        /// Updates visuals to reflect <see cref="DisplayObject"/>.
+        /// </summary>
+        public abstract void UpdateVisuals();
     }
 }
