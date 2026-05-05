@@ -58,7 +58,8 @@ namespace Displayable
         {
             if (displayObject == null) throw new ArgumentNullException(nameof(displayObject));
 
-            DisplayType display = displayInstances.FirstOrDefault(display => display.DisplayObject == null) ?? MakeDisplay(displayObject);
+            DisplayType display = displayInstances.FirstOrDefault(display => display.DisplayObject == null) ?? MakeDisplay();
+            display.DisplayObject = displayObject;
 
             UpdateDisplays();
 
@@ -79,7 +80,8 @@ namespace Displayable
             List<DisplayType> displays = new();
             foreach (ObjectType displayObject in displayObjects)
             {
-                DisplayType display = availableDisplays.Any() ? availableDisplays.Dequeue() : MakeDisplay(displayObject);
+                DisplayType display = availableDisplays.Any() ? availableDisplays.Dequeue() : MakeDisplay();
+                display.DisplayObject = displayObject;
                 displays.Add(display);
             }
 
@@ -88,10 +90,9 @@ namespace Displayable
             return displays;
         }
 
-        private DisplayType MakeDisplay(ObjectType displayObject = null)
+        private DisplayType MakeDisplay()
         {
             DisplayType display = Instantiate(displayPrefab, displayParent);
-            display.DisplayObject = displayObject;
             displayInstances.Add(display);
 
             return display;
@@ -150,7 +151,7 @@ namespace Displayable
         /// </summary>
         protected void DestroyDisplays(Predicate<DisplayType> predicate = null)
         {
-            foreach (var display in displayInstances)
+            foreach (var display in displayInstances.ToArray())
             {
                 if (predicate != null && !predicate(display)) continue;
 

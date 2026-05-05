@@ -1,10 +1,18 @@
 {
   "displayName": "Displayable",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Nick S Will",
     "url": "https://github.com/Nick-S-Will"
   },
   "name": "com.piconico.displayable",
-  "description": "A generic-based group of scripts for displaying collections of objects."
+  "unity": "6000.4",
+  "description": "A generic-based group of scripts for displaying objects.",
+  "samples": [
+    {
+      "displayName": "User Display",
+      "description": "Basic Display Example",
+      "path": "Samples~/User Display"
+    }
+  ]
 }

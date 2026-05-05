@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96b5a8e4cfd6ebe44b52516df3c1954d, type: 3}
+  m_Name: Hannah Banana
+  m_EditorClassIdentifier: Displayable.Samples.UserDisplay::Displayable.Samples.UserDisplay.User
+  <Tint>k__BackingField: {r: 1, g: 1, b: 0, a: 1}
+  <ProfilePicture>k__BackingField: {fileID: 21300000, guid: 39bc3ac56850f2848bf05af95188b75c, type: 3}
+  <Username>k__BackingField: Pocket Princess

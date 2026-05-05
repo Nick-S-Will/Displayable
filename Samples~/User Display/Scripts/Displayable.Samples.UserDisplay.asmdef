@@ -1,0 +1,16 @@
+{
+    "name": "Displayable.Samples.UserDisplay",
+    "rootNamespace": "Displayable.Samples.UserDisplay",
+    "references": [
+        "GUID:6d93fffb3acd38143b7cf77815cc6b7c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Displayable
 {
     /// <summary>
-    /// <see cref="MonoBehaviour"/> that displays an <typeparamref name="ObjectType"/>.
+    /// <see cref="MonoBehaviour"/> that displays a(n) <typeparamref name="ObjectType"/>.
     /// </summary>
     public abstract class Display<ObjectType> : MonoBehaviour where ObjectType : class
     {
