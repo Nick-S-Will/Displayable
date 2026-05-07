@@ -40,7 +40,7 @@ namespace Displayable
         /// Gets or makes <typeparamref name="DisplayType"/>s for all <paramref name="displayObjects"/>.
         /// </summary>
         /// <remarks>Overrides existing display objects.</remarks>
-        public void SetObjects(ObjectType[] displayObjects)
+        public void SetObjects(IEnumerable<ObjectType> displayObjects)
         {
             if (displayObjects == null) throw new ArgumentNullException(nameof(displayObjects));
 

@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace Displayable
@@ -8,20 +7,25 @@ namespace Displayable
     /// </summary>
     public abstract class Display<ObjectType> : MonoBehaviour where ObjectType : class
     {
-        protected event Action DisplayObjectChanged;
+        protected delegate void ObjectChanging(ObjectType oldObject, ObjectType newObject);
 
         public ObjectType DisplayObject 
         {
             get => displayObject;
             set
             {
-                displayObject = value;
-                DisplayObjectChanged?.Invoke();
+                if (displayObject != value)
+                {
+                    DisplayObjectChanging?.Invoke(displayObject, value);
+                    displayObject = value;
+                }
 
                 SetVisible(displayObject != null);
                 UpdateVisuals();
             }
         }
+
+        protected event ObjectChanging DisplayObjectChanging;
 
         private ObjectType displayObject;
        
